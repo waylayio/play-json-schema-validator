@@ -49,7 +49,7 @@ object ObjectValidators {
               Results.failureWithPath(
                 Keywords.Object.Required,
                 ValidatorMessages("obj.required.prop", attr.name),
-                context,
+                context.updateScope(scope => scope.copy(instancePath = scope.instancePath \ attr.name)),
                 json
               ) :: props
           } else {
@@ -77,7 +77,7 @@ object ObjectValidators {
                 Results.failureWithPath(
                   Keywords.Object.Required,
                   ValidatorMessages("obj.required.prop", req),
-                  context,
+                  context.updateScope(scope => scope.copy(instancePath = scope.instancePath \ req)),
                   json
                 )
               result :: acc

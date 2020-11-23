@@ -1,0 +1,57 @@
+kind: pipeline
+type: docker
+name: default
+
+steps:
+
+  - name: restore-cache
+    image: homerovalle/drone-gcs-cache
+    #pull: always
+    settings:
+      pull: true
+      bucket: drone-build-caches
+      json_key:
+        from_secret: drone_service_account_key
+      restore: true
+      mount:
+        - ./.coursier
+        - ./.sbt
+        - ./.ivy2
+
+  - name: build, test and generate docker file
+    image: hseeberger/scala-sbt:11.0.8_1.3.13_2.12.8
+    environment:
+      NEXUS_USER:
+        from_secret: nexus_username
+      NEXUS_PASSWORD:
+        from_secret: nexus_password
+    commands:
+      # - env
+      - mkdir -p /drone/src/.sbt/1.0
+      - echo "credentials += Credentials(\"Sonatype Nexus Repository Manager\", \"nexus.waylay.io\", \"$${NEXUS_USER}\", \"$${NEXUS_PASSWORD}\")" > /drone/src/.sbt/1.0/global.sbt
+      - export COURSIER_CACHE=/drone/src/.coursier/cache/v1
+      - export SBT_OPTS="-Dsbt.global.base=/drone/src/.sbt/1.0 -Dsbt.ivy.home=/drone/src/.ivy2"
+      - sbt clean test
+
+  - name: rebuild-cache
+    image: homerovalle/drone-gcs-cache
+    settings:
+      bucket: drone-build-caches
+      json_key:
+        from_secret: drone_service_account_key
+      rebuild: true
+      mount:
+        - ./.coursier
+        - ./.sbt
+        - ./.ivy2
+
+  - name: slack
+    image: plugins/slack
+    settings:
+      webhook:
+        from_secret: slack_webhook
+      channel: scala-ci
+      username: drone
+      icon_url: 'https://rawcdn.githack.com/drone/brand/master/logos/png/drone-logo_256.png'
+    when:
+      status: [ changed, failure ]

@@ -1,9 +1,9 @@
 
 val Repositories = Seq(
-  "Typesafe repository"           at "http://repo.typesafe.com/typesafe/releases/",
+  "Typesafe repository"           at "https://repo.typesafe.com/typesafe/releases/",
   "Sonatype OSS Snapshots"        at "https://oss.sonatype.org/content/repositories/snapshots",
   "Sonatype OSS Releases"         at "https://oss.sonatype.org/content/repositories/releases",
-  "scalaz-bintray"                at "http://dl.bintray.com/scalaz/releases"
+  "scalaz-bintray"                at "https://dl.bintray.com/scalaz/releases"
 )
 
 val commonSettings = Seq(
@@ -17,9 +17,13 @@ val commonSettings = Seq(
 
 val releaseSettings = Seq(
   publishMavenStyle := true,
-  bintrayOrganization := None,
-  bintrayPackageLabels := Seq("json", "json-schema", "play", "scala"),
-  bintrayVcsUrl := Some("git@github.com:eclipsesource/play-json-schema-validator.git")
+  publishTo := {
+    val nexus = "https://nexus.waylay.io"
+    if (isSnapshot.value)
+      Some("Waylay snapshot repo" at nexus + "/repository/maven-snapshots")
+    else
+      Some("Waylay releases repo" at nexus + "/repository/maven-releases")
+  }
 )
 
 val buildSettings = Defaults.coreDefaultSettings ++ commonSettings
